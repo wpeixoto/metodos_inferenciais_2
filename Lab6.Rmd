@@ -57,12 +57,12 @@ abline(cars_fit)
 
 Os coeficientes são: $\beta_0$ == `r cars_fit$coefficients[1]` e $\beta_1$ == `r cars_fit$coefficients[2]` e os valores previstos estão na tabela abaixo:
 
-```{r, echo=FALSE}
+```{r Car perdicted values, echo=FALSE}
 print(simple_predict(cars_fit, cars_values))
 ```
 ### Análise dos resíduos
 
-```{r, echo=FALSE}
+```{r Cars residuals, echo=FALSE}
 hist(cars_fit$residuals, main = "Resíduos de lm(dist ~ speed, cars)")
 plot(x=cars$speed, y=cars_fit$residuals)
 abline(0,0)
@@ -87,15 +87,22 @@ ozone_solar_values = c(10, 100, 200, 300)
 
 Os coeficientes são: $\beta_0$ == `r ozone_solar_fit$coefficients[1]` e $\beta_1$ == `r ozone_solar_fit$coefficients[2]` e os valores previstos estão na tabela abaixo:
 
-```{r, echo=FALSE}
+```{r Ozone solar values, echo=FALSE}
 print(simple_predict(ozone_solar_fit, ozone_solar_values))
 ```
 
-### Análise dos resíduos
-```{r}
+#### Análise dos resíduos
+```{r solar residuals}
 ```
 
+### Ozônio em função da velocidade do vento
+```{r wind}
+```
+#### Análise de resíduos
+```{r wind residuals}
+```
 ## Exercício 3 - Eleições
-
+```{r eleicoes}
+```
 
 ## Exercício 4 - Bandas de confiança e de predição
