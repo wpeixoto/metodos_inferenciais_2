@@ -1,0 +1,101 @@
+---
+title: "Lab 6"
+author: "William"
+date: "26 de agosto de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+simple_predict = function(model, newdata) {
+  if (class(model) != 'lm') {
+    warning("O objeto passado não é um modelo linear")
+  }
+  resp = model$coefficients[1] + model$coefficients[2]*newdata
+  names(resp) = newdata
+  return(resp)
+}
+
+```
+
+## Exercícios
+
+Para os exercícios a seguir: 
+
+1. efetue a regressão linear; 
+2. encontre os coeficientes de regressão; 
+3. plote o gráfico de dispersão e a reta de regressão; 
+4. plote o histograma dos resíduos; 
+5. plote o gráfico dos resíduos em função do preditor; 
+6. determine o valor esperado para os preditores especificados; e 
+7. utilize a função summary para verificar o valor de R².
+
+### Andamento
+
+Item |  Cars | $O_3 \times$ Rad | $O_3 \times$ Wind | Eleições | Bandas
+-----|-------|------------|----------|--------
+1    | Ok | Ok | - | -| -  
+2    | Ok | - | - | - | - 
+3    | Ok | - | - | - | - 
+4    | Ok | - | - | - | - 
+5    | Ok | - | - | - | - 
+6    | Ok | - | - | - | - 
+7    | Ok | - | - | - | - 
+
+## Exercício 1 - cars
+
+O conjunto de dados cars , do pacote datasets , registra a distância ( distance ) percorrida até a parada total de um determinado carro e a velocidade ( speed ) em que o freio foi pressionado. Qual o valor esperado da distância frenagem para as velocidades (mph): 5, 10, 14, 23 e 30.
+
+```{r cars, echo=FALSE}
+cars_fit = lm(dist ~ speed, data=cars)
+cars_values = c(5, 10, 14, 23, 3)
+
+plot(cars$speed, cars$dist)
+abline(cars_fit)
+```
+
+Os coeficientes são: $\beta_0$ == `r cars_fit$coefficients[1]` e $\beta_1$ == `r cars_fit$coefficients[2]` e os valores previstos estão na tabela abaixo:
+
+```{r, echo=FALSE}
+print(simple_predict(cars_fit, cars_values))
+```
+### Análise dos resíduos
+
+```{r, echo=FALSE}
+hist(cars_fit$residuals, main = "Resíduos de lm(dist ~ speed, cars)")
+plot(x=cars$speed, y=cars_fit$residuals)
+abline(0,0)
+cars_summ = summary(cars_fit)
+print(cars_summ)
+```
+
+O valor de $R^2$ é `r cars_summ$r.squared` e o $R^2$ ajustado é `r cars_summ$adj.r.squared`, o que pode ser interpretado como sendo a velocidade no momento da frenagem responsável por explicar `r cars_summ$adj.r.squared * 100`% da distância percorrida após esse ato.
+
+## Exercício 2 - `airquality`
+
+Verifique, por meio da regressão linear, a variação da *concentração de Ozônio* em função da *radiação solar*. **Estime** a concentração de Ozônio esperada para os seguintes níveis de radiação (lang): 10, 100, 200, 300.
+
+Verifique, também, a variação da **concentração de Ozônio** em função da **velocidade do vento**. Estime a concentração de Ozônio esperada para as seguintes velocidades do vento (mph): 1.5, 3.7, 10, 15.3, 22
+
+```{r airquality, echo=FALSE}
+ozone_solar_fit = lm(airquality$Ozone ~ airquality$Solar.R)
+ozone_solar_values = c(10, 100, 200, 300)
+```
+
+### Ozônio em função da radiação solar
+
+Os coeficientes são: $\beta_0$ == `r ozone_solar_fit$coefficients[1]` e $\beta_1$ == `r ozone_solar_fit$coefficients[2]` e os valores previstos estão na tabela abaixo:
+
+```{r, echo=FALSE}
+print(simple_predict(ozone_solar_fit, ozone_solar_values))
+```
+
+### Análise dos resíduos
+```{r}
+```
+
+## Exercício 3 - Eleições
+
+
+## Exercício 4 - Bandas de confiança e de predição
