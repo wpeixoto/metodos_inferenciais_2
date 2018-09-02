@@ -37,16 +37,24 @@ Para os exercícios a seguir:
 7. utilize a função summary para verificar o valor de R².
 
 ### Andamento
+```{r aux_present, message=FALSE, warning=FALSE, paged.print=FALSE, echo=FALSE}
+# nh = function(x) {
+#   paste('<span style="color:red" title="Suspeita de inaplicabilidade do modelo linear">', x, '</span>')
+# }
+Oknh = '<span style="color:red" title="Suspeita de inaplicabilidade do modelo linear">Ok</span>'
+# TODO Verificar a falta de homocetasticidade!
+```
+
 
 Item                |  Cars | $O_3 \times$ Rad | $O_3 \times$ Wind | Eleições | Bandas
 --------------------|-------|------------|----------|--------
-1  Regressão        |  Ok   | Ok | - | -| -  
-2  Coeficientes     |  Ok   | Ok | - | - | - 
-3  Dispersão e reta |  Ok   | Ok | - | - | - 
-4  Hist. resíduos   |  Ok   | Ok | - | - | - 
-5  Resíduos x $x$   |  Ok   | <span style="color:red">Ok</span> | - | - | - 
-6  Valores          |  Ok   | Ok | - | - | - 
-7  summary -> R²    |  Ok   | Ok | - | - | - 
+1  Regressão        |  Ok   | Ok | Ok | Ok| -  
+2  Coeficientes     |  Ok   | Ok | Ok | - | - 
+3  Dispersão e reta |  Ok   | Ok | Ok | Ok | - 
+4  Hist. resíduos   |  Ok   | Ok | Ok- | Ok | - 
+5  Resíduos x $x$   |  Ok   | `r Oknh` | `r Oknh` | Ok | - 
+6  Valores          |  Ok   | Ok | Ok | Não há | - 
+7  summary -> R²    |  Ok   | Ok | Ok | - | - 
 
 ## Exercício 1 - cars
 
@@ -139,6 +147,68 @@ O valor de $R^2$ é `r ozone_wind_fit_summary$r.squared` e o $R^2$ ajustado é `
 ## Exercício 3 - Eleições
 
 ```{r eleicoes}
+Eleicoes = read.csv("Eleicoes2014_utf8.csv", encoding = "utf-8", sep=";", header = T)
+plot(x=Eleicoes$Receitas.em.2014, y=Eleicoes$Nominais,
+     main = "Votos nominais em função da receita de campanha", sub = "Todos")
+El_cap2 = Eleicoes[Eleicoes$Nominais<350000,]  # Descartar outliers
+Elm_cap2 = lm(El_cap2$Nominais ~ El_cap2$Receitas.em.2014)
+plot(x=El_cap2$Receitas.em.2014, y=El_cap2$Nominais,
+     main = "Votos nominais em função da receita de campanha",
+     sub = "Sem os 5 mais votados")
+abline(Elm_cap2)
+hist(Elm_cap2$residuals)
+plot(x=El_cap2$Receitas.em.2014, y=Elm_cap2$residuals,
+     main = "Resíduos do modelo linear em função da arrecadação de campanha",
+     xlab = "Receitas em 2014")
+abline(0,0)
+
+El_cap7 = El_cap2[El_cap2$Receitas.em.2014 < 2e+06,]
+plot(x=El_cap7$Receitas.em.2014, y=El_cap7$Nominais,
+     main = "Recorte dos eleitos com arrecadação menor que R$ 2 Milhões")
+abline(Elm_cap2)
+zzz = data.frame(Receitas = El_cap2$Receitas.em.2014, Resid = Elm_cap2$residuals)
+zzz_ = zzz[zzz$Receitas < 2e+06,]
+plot(x=zzz_$Receitas, y=zzz_$Resid,
+     main = "Recorte dos eleitos com arrecadação menor que R$ 2 Milhões\n(Resíduos)")
+abline(Elm_cap2)
+
+SumEl = summary(Elm_cap2)
+
 ```
 
+O valor de $R^2$ é `r SumEl$r.squared` e o $R^2$ ajustado é `r SumEl$adj.r.squared`, o que pode ser interpretado como sendo a arrecadação de campanha responsável por explicar `r SumEl$adj.r.squared * 100`% da quantidade de votos nominais recebidos.
+
 ## Exercício 4 - Bandas de confiança e de predição
+
+```{r}
+source("lmIC.R")
+
+
+```
+
+### Cars
+
+```{r}
+lmIC(cars$speed, cars$dist, vx=cars_values)
+```
+
+### Air Quality
+
+#### Ozônio em função da radiação solar
+
+```{r}
+lmIC(airquality_S$Solar.R, airquality_S$Ozone, vx=ozone_solar_values)
+```
+
+#### Ozônio em função da velocidade do vento
+
+```{r}
+lmIC(airquality_S$Wind, airquality_S$Ozone, vx=ozone_wind_values)
+```
+
+### Eleições: Quantidade de votos nominais em função da arrecadação de campanha (sem _outliers_)
+
+```{r}
+lmIC(El_cap2$Receitas.em.2014, El_cap2$Nominais)
+```
+
