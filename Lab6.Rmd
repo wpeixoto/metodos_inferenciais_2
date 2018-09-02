@@ -2,11 +2,16 @@
 title: "Lab 6"
 author: "William"
 date: "26 de agosto de 2018"
-output: html_document
+output: 
+  html_document:
+    toc: True
+    theme: united
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# source("https://gist.githubusercontent.com/wpeixoto/d70186dec27fd06937e672e73d6e3467/raw/8a4afb35b74fa492a371c16e98dd3131d28521bd/simple_lm_predict.R")
 
 simple_predict = function(model, newdata) {
   if (class(model) != 'lm') {
@@ -33,15 +38,15 @@ Para os exercícios a seguir:
 
 ### Andamento
 
-Item |  Cars | $O_3 \times$ Rad | $O_3 \times$ Wind | Eleições | Bandas
------|-------|------------|----------|--------
-1    | Ok | Ok | - | -| -  
-2    | Ok | - | - | - | - 
-3    | Ok | - | - | - | - 
-4    | Ok | - | - | - | - 
-5    | Ok | - | - | - | - 
-6    | Ok | - | - | - | - 
-7    | Ok | - | - | - | - 
+Item                |  Cars | $O_3 \times$ Rad | $O_3 \times$ Wind | Eleições | Bandas
+--------------------|-------|------------|----------|--------
+1  Regressão        |  Ok   | Ok | - | -| -  
+2  Coeficientes     |  Ok   | Ok | - | - | - 
+3  Dispersão e reta |  Ok   | Ok | - | - | - 
+4  Hist. resíduos   |  Ok   | Ok | - | - | - 
+5  Resíduos x $x$   |  Ok   | <span style="color:red">Ok</span> | - | - | - 
+6  Valores          |  Ok   | Ok | - | - | - 
+7  summary -> R²    |  Ok   | Ok | - | - | - 
 
 ## Exercício 1 - cars
 
@@ -79,6 +84,8 @@ Verifique, por meio da regressão linear, a variação da *concentração de Oz�
 Verifique, também, a variação da **concentração de Ozônio** em função da **velocidade do vento**. Estime a concentração de Ozônio esperada para as seguintes velocidades do vento (mph): 1.5, 3.7, 10, 15.3, 22
 
 ```{r airquality, echo=FALSE}
+# airquality = airquality[!is.na(airquality)]
+airquality_S = airquality[complete.cases(airquality),]
 ozone_solar_fit = lm(airquality$Ozone ~ airquality$Solar.R)
 ozone_solar_values = c(10, 100, 200, 300)
 ```
@@ -89,19 +96,48 @@ Os coeficientes são: $\beta_0$ == `r ozone_solar_fit$coefficients[1]` e $\beta_
 
 ```{r Ozone solar values, echo=FALSE}
 print(simple_predict(ozone_solar_fit, ozone_solar_values))
+airq_S = airquality
+plot(airquality$Solar.R, airquality$Ozone, main="Radiação solar x Ozônio")
+abline(ozone_solar_fit)
 ```
 
 #### Análise dos resíduos
 ```{r solar residuals}
+hist(ozone_solar_fit$residuals)
+plot(x=airquality_S$Solar.R, y=ozone_solar_fit$residuals)
+abline(0,0)
+ozone_solar_fit_summary = summary(ozone_solar_fit)
 ```
+
+O valor de $R^2$ é `r ozone_solar_fit_summary$r.squared` e o $R^2$ ajustado é `r ozone_solar_fit_summary$adj.r.squared`, o que pode ser interpretado como sendo a radiação solar responsável por explicar `r ozone_solar_fit_summary$adj.r.squared * 100`% da concenração de Ozônio. Contudo, o gráfico de dispersão dos resíduos em função do preditor levanta a suspeita de falta de homocedasticidade, o que compromete o uso de um modelo linear nesse caso.
 
 ### Ozônio em função da velocidade do vento
 ```{r wind}
+airquality_S = airquality[complete.cases(airquality),]
+ozone_wind_fit = lm(airquality_S$Ozone ~ airquality_S$Wind)
+ozone_wind_values = c(1.5, 3.7, 10, 15.3, 22)
+
+print("Previsão de valores ausentes")
+print(simple_predict(ozone_wind_fit, ozone_wind_values))
+# airq_S = airquality
+plot(airquality_S$Wind, airquality_S$Ozone, main="Vento x Ozônio")
+abline(ozone_wind_fit)
 ```
+
 #### Análise de resíduos
+
 ```{r wind residuals}
+hist(ozone_wind_fit$residuals)
+plot(x=airquality_S$Wind, y=ozone_wind_fit$residuals)
+abline(0,0)
+ozone_wind_fit_summary = summary(ozone_wind_fit)
+
 ```
+
+O valor de $R^2$ é `r ozone_wind_fit_summary$r.squared` e o $R^2$ ajustado é `r ozone_wind_fit_summary$adj.r.squared`, o que pode ser interpretado como sendo a velocidade do vento responsável por explicar `r ozone_wind_fit_summary$adj.r.squared * 100`% da concenração de Ozônio. Contudo, o gráfico de dispersão dos resíduos em função do preditor levanta a suspeita de falta de homocedasticidade, o que compromete o uso de um modelo linear nesse caso.
+
 ## Exercício 3 - Eleições
+
 ```{r eleicoes}
 ```
 
