@@ -1,0 +1,222 @@
+---
+title: "Swiss example: Regressão linear múltipla"
+author: "William"
+date: "2 de setembro de 2018"
+output:
+  html_document:
+      toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(datasets)
+data(swiss)
+require(stats)
+require(graphics)
+duv = function(trecho) {
+  paste("<span style='color:red'>", trecho, "</span>")
+}
+```
+
+swiss {datasets}	R Documentation
+### Swiss Fertility and Socioeconomic Indicators (1888) Data
+
+#### Description
+
+Standardized fertility measure and socio-economic indicators for each of 47 French-speaking provinces of Switzerland at about 1888.
+
+#### Usage
+
+`swiss`
+
+#### Format
+
+A data frame with 47 observations on 6 variables, each of which is in percent, i.e., in [0, 100].
+
+| col  |  Name            |                                                       |
+|------|------------------|-------------------------------------------------------|
+| [,1] | Fertility        | Ig, ‘common standardized fertility measure’           |
+| [,2] | Agriculture      | % of males involved in agriculture as occupation      |
+| [,3] | Examination      | % draftees receiving highest mark on army examination |
+| [,4] | Education        | % education beyond primary school for draftees.       |
+| [,5] | Catholic         | % ‘catholic’ (as opposed to ‘protestant’).            |
+| [,6] | Infant.Mortality | live births who live less than 1 year.                |
+
+All variables but ‘Fertility’ give proportions of the population.
+
+## Verificar as relações marginais
+
+```{r}
+pairs(swiss, panel = panel.smooth, main = "Swiss data", col = 3 + (swiss$Catholic > 50))
+```
+
+## Regressão múltipla "Go Horse"
+```{r}
+# regressão múltipla - ver estimativa ajustada de Agriculture
+summary(lm(Fertility ~ . , data = swiss))$coefficients
+summary(lm(Fertility ~ . , data = swiss))
+```
+
+Numa primeira análise, o coeficiente para o preditor "Examination" parece não ter relevância estatística porque seu p-value é 0.31546, e portanto $>\alpha$. Isso significa que não é possível rejeitar a Hipótese Nula $H_0$ de que o coeficiente é zero.
+
+Vamos continuar a análise e ver o que realmente está acontecendo.
+
+## Regressão simples apenas para "Agrigulture"
+```{r agrifit}
+# estimativa ajustada de Agriculture
+agrifit = lm(Fertility ~ Agriculture, data = swiss)
+summary(agrifit)$coefficients
+```
+Mmm, o sinal mudou. Quando a regressão tinha todos os campos, a relação era inversamente proporcional. Quando analisada sozinha, vira positiva. Isso faz sentido quando olhamos apenas o gráfico Fertility x Agriculture:
+```{r plot agrifit, echo=FALSE}
+plot(x=swiss$Agriculture, y=swiss$Fertility)
+abline(agrifit)
+```
+
+## Co-variância: Comparar "Agriculture" e "Examination"
+Um dos pressupostos do modelo de regressão linear é que as variáveis preditoras sejam independentes entre si. Quando isso não acontece, distorções são introduzidas. Vamos provocar deliberadamente uma distorçao dessas:
+```{r Agriculture vs Examination taint}
+# inversao de sinal - exemplo 1
+y = swiss$Fertility
+x1 = swiss$Agriculture
+x2 = swiss$Examination
+summary(lm(y ~ x1))$coef
+# Contaminar# inversao de sinal - exemplo 1
+y = swiss$Fertility
+x1 = swiss$Agriculture
+x2 = swiss$Examination
+summary(lm(y ~ x1))$coef
+summary(lm(y ~ x1 + x2))$coef
+```
+
+O sinal trocou. De alguma forma, a adição da variável "Examination" ao modelo causou confusão suficiente pra inverter o sinal da relação.
+
+```{r}
+library(ggplot2)
+dat = data.frame(y = swiss$Fertility, x1 = swiss$Agriculture, x2 =
+swiss$Examination, ey = resid(lm(y ~ x2)), ex1 = resid(lm(x1 ~ x2)))
+g = ggplot(dat, aes(y = y, x = x1, colour = x2))
+g = g + geom_point(colour="grey50", size = 5) + geom_smooth(method = lm,
+se = FALSE, colour = "black")
+g = g + geom_point(size = 4)
+g
+```
+
+```{r}
+g2 = ggplot(dat, aes(y = ey, x = ex1, colour = x2))
+g2 = g2 + geom_point(colour="grey50", size = 5) + geom_smooth(method =
+lm, se = FALSE, colour = "black") + geom_point(size = 4)
+g2
+```
+
+### Outro exemplo de inversão de sinal
+
+Neste exemplo, construímos um modelo com base em dois preditores correlacionados entre si:
+
+- $x_2$ é uma sequência de $n$ inteiros consecutivos
+- $x_1$ é uma função de $x_2$ ($x_1 = f(x_2) = 0.01 \times x_2 + g_n$, onde $g_n$ é uma distribuição uniforme de valores entre -0.1 e 0.1)
+- $y$ tem distribuição normal e depende de $-x_1$ e $x_2$ (sinais opostos)
+
+```{r}
+# inversão de sinal - exemplo 2
+n <- 100; x2 <- 1 : n; x1 <- .01 * x2 + runif(n, -.1, .1);
+y = -x1 + x2 + rnorm(n, sd = .01)
+```
+
+Façamos a análise como se não soubéssemos a relação entre $y, x_1$  e $x_2$:
+```{r}
+summary(lm(y ~ x1))$coef
+```
+Observe-se que, num modelo linear simples que tem apenas a variãvel que depende de $x_2$ (e portanto, $x_2$ está fora do modelo), o coeficiente estimado é alto e o p-value é praticamente zero.
+```{r}
+summary(lm(y ~ x1 + x2))$coef
+```
+
+Acrescentar $x_2$ ao modelo causou uma inversão de sinal, justamente porque $y = -x_1 + x_2 + g_n$ (fizemos de conta não saber isso).
+
+Pra facilitar a comparação, construímos um `data.frame`:
+
+```{r}
+dat = data.frame(y = y, 
+                 x1 = x1, 
+                 x2 = x2, 
+                 ey = resid(lm(y ~ x2)),  # Resíduos de y ~x_2
+                 ex1 = resid(lm(x1 ~ x2)) # Aqui, os de x_1 ~ x_2, que sabemos serem relacionados
+                )
+```
+
+A terceira dimensão será simulada com cores no diagrama abaixo: No eixu y, $y$; no eixo x, $x_1$ e tons de azul mais claros são valores mais altos de $x_2$:
+```{r}
+g = ggplot(dat, aes(y = y, x = x1, colour = x2))
+g = g + geom_point(colour="grey50", size = 5) + geom_smooth(method = lm,
+se = FALSE, colour = "black")
+g = g + geom_point(size = 4)
+g
+```
+A reta preta é a do modelo linear (qual? esse ggplot está fazendo alguma mágica aí). Dá pra perceber uma forte correlação entre $x_1$ e $x_2$: há um gradiente ao longo da reta semelhante ao da própria legenda (quando $x_2 = 50, x_1 = 0.50$).
+
+Vejamos os resíduos:
+```{r}
+g2 = ggplot(dat, aes(y = ey, x = ex1, colour = x2))
+g2 = g2 + geom_point(colour="grey50", size = 5) + geom_smooth(method =
+lm, se = FALSE, colour = "black") + geom_point(size = 4)
+g2
+```
+
+### De volta a `swiss`
+
+```{r}
+# quanto o modelo explica o índice de fertilidade
+summary(lm(Fertility ~ Agriculture
++ Examination
++ Education
++ Catholic
++ Infant.Mortality
+, data = swiss))
+```
+O R² ajustado ficou em 67%. Mas é isso mesmo?
+```{r}
+# o sinal inverte com a inclusão de Examination + Education
+# ambos são inversamente correlacionados com Agriculture
+summary(lm(Fertility ~ Agriculture
+# + Examination
+# + Education
++ Catholic
++ Infant.Mortality
+, data = swiss))
+cor(swiss$Agriculture, swiss$Examination)
+cor(swiss$Agriculture, swiss$Education)
+cor(swiss$Education, swiss$Examination)
+```
+Agora R² ajustado é 34% sem essas variáveis de educação.
+```{r}
+
+# e se incluirmos uma variável desnecessária
+z <- swiss$Agriculture + swiss$Education
+lm(Fertility ~ . + z, data = swiss)
+```
+
+`r duv("Por que o coeficiente de z ficou <code>NA</code>?")`
+
+```{r}
+# o sinal inverte com a inclusão de Examination + Education
+# ambos são inversamente correlacionados com Agriculture
+summary(lm(Fertility ~ Agriculture
++ Examination
+# + Education
++ Catholic
++ Infant.Mortality
+, data = swiss))
+cor(swiss$Agriculture, swiss$Examination)
+cor(swiss$Agriculture, swiss$Education)
+cor(swiss$Education, swiss$Examination)
+```
+Deixar só "Education" leva a um R² ajustado de 67%, e todos os coeficientes tem p-value menor que $\alpha = 5%$. Deixar só "Examination" leva a um R² ajustado de 50% e faz o p-value de "Agriculture" estourar os 50%!
+
+A variável "Examination" adiciona mais ruído que "Education", que a determina
+
+## Fim
+
+O ideal seria a ortogonalidade entre os preditores. Na prática, isso raramente acontece: sempre ocorre alguma inter-correlação que precisa ser analisada para ver qual (ou quais) preditor(es) precisa(m) ser eliminado(s) do modelo.
+
+Se os resíduos tiverem a mesma correlação que os coeficientes ("same" slope) pode ser melhor pra entender do que quando há inversão de sinal, como nos exemplos acima.
